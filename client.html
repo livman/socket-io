@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Socket.IO</title>
+    </head>
+    <body>
+        <h3>Room</h3>
+        <div id="room"></div>
+        <h3>Message</h3>
+        <div><input value="" id="message" /></div>
+        <div><button id="send">Send</button></div>
+
+        <div id="display"></div>
+
+        <div><button id="leave">Leave</button></div>
+
+        </div>
+
+<script src="/socket.io/socket.io.js"></script>
+        <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+        <script>
+
+            $.urlParam = function(name){
+                var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+                return results[1] || 0;
+            }
+
+            var roomSelected = $.urlParam('room');
+
+            $('#room').html('Room: ' + roomSelected);
+
+            var socket = io.connect('http://localhost:3000');
+
+            // display previous message
+            socket.on('prvMessage', function(data) {
+                console.log(data);
+                if (data.room == roomSelected && data.hasOwnProperty('messages') ) {
+                    $('#display').html('');
+                    $.each( data.messages, function( key, value ) {
+                        $('#display').append('<div>' + value + '</div>');
+                    });
+                }
+            })
+        
+            socket.emit('subscribe', roomSelected);
+                 
+            $('#send').click(function() {
+                var room = roomSelected,
+                message = $('#message').val();
+                
+                socket.emit('send', { room: room, message: message });
+                $('#message').val('');
+            });
+
+            socket.on('message', function(data) {
+                console.log(data, roomSelected);
+                if (data.room == roomSelected) {
+                    $('#display').append('<div>' + data.message + '</div>');
+                }
+                
+            })
+
+            $('#leave').click(function() {
+                socket.emit('unsubscribe', roomSelected);
+            });
+
+            $(document).on('keypress',function(e) {
+                if(e.which == 13) {
+                    $('#send').click();
+                }
+            });
+
+        </script>
+</body>
+</html>
